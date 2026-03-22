@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AI-Powered Legacy Code Modernization Engine — Real-time progress, diff viewer, metrics, and explanations." />
+  <title>CodeAscend | AI Legacy Code Modernizer</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+<!-- ═══ NAVBAR ═══════════════════════════════════════════════════════════════ -->
+<nav class="navbar navbar-dark px-4">
+  <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+    <span class="brand-icon"><i class="bi bi-cpu-fill"></i></span>
+    <span class="brand-text">Code<span class="brand-accent">Ascend</span></span>
+    <span class="version-tag">v2</span>
+  </a>
+  <div class="d-flex align-items-center gap-3">
+    <span class="badge-pill-glow d-none d-md-inline-flex"><i class="bi bi-stars me-1"></i>AI-Powered</span>
+    <div id="langDetectedNav" class="d-none">
+      <span class="lang-detected-pill" id="navLangBadge"></span>
+    </div>
+    <button class="btn-ghost-sm" id="logsBtn"><i class="bi bi-journal-text me-1"></i>Logs</button>
+  </div>
+</nav>
+
+<!-- ═══ HERO ══════════════════════════════════════════════════════════════════ -->
+<section class="hero-section">
+  <div class="hero-grid-overlay"></div>
+  <div class="container text-center">
+    <div class="glowing-badge mb-4">
+      <i class="bi bi-lightning-charge-fill me-1"></i>
+      Context-Optimized · Real-Time Progress · Multi-Language
+    </div>
+    <h1 class="hero-title">Legacy Code <span class="gradient-text">Modernization</span> Engine</h1>
+    <p class="hero-subtitle">
+      Upload legacy Java, COBOL, or Python files. Our AI chunks intelligently,
+      modernizes each unit in real-time, and delivers production-ready code with
+      visual diffs, metrics, and per-chunk explanations.
+    </p>
+    <div class="lang-pills mb-3">
+      <span class="lang-pill python" data-lang="python"><i class="bi bi-filetype-py me-1"></i>Python</span>
+      <span class="lang-pill java"   data-lang="java"  ><i class="bi bi-filetype-java me-1"></i>Java</span>
+      <span class="lang-pill cobol"  data-lang="cobol" ><i class="bi bi-file-earmark-code me-1"></i>COBOL</span>
+      <span class="lang-pill js"     data-lang="js"    ><i class="bi bi-filetype-js me-1"></i>JavaScript</span>
+      <span class="lang-pill more"                     ><i class="bi bi-plus-circle me-1"></i>More</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ MAIN ══════════════════════════════════════════════════════════════════ -->
+<main class="container main-container">
+
+  <!-- ─── UPLOAD CARD ──────────────────────────────────────────────────────── -->
+  <div class="glass-card upload-card mb-4">
+    <div class="card-header-custom">
+      <i class="bi bi-cloud-upload-fill me-2 text-accent"></i>
+      Upload Legacy Code File
+    </div>
+
+    <!-- Sample loaders -->
+    <div class="sample-bar mb-3">
+      <span class="sample-bar-label"><i class="bi bi-database-fill me-1"></i>Load sample:</span>
+      <button class="btn-sample" data-lang="python" id="samplePy">
+        <i class="bi bi-filetype-py me-1"></i>Python
+      </button>
+      <button class="btn-sample" data-lang="java" id="sampleJava">
+        <i class="bi bi-filetype-java me-1"></i>Java
+      </button>
+      <button class="btn-sample" data-lang="cobol" id="sampleCobol">
+        <i class="bi bi-file-earmark-code me-1"></i>COBOL
+      </button>
+    </div>
+
+    <form id="modernizeForm" enctype="multipart/form-data">
+      <!-- Drop zone -->
+      <div class="drop-zone" id="dropZone">
+        <div class="drop-zone-icon"><i class="bi bi-file-earmark-code"></i></div>
+        <div class="drop-zone-text">
+          <strong>Drag &amp; drop your file here</strong><br/>
+          <span class="text-muted-custom">or click to browse — max 5 MB</span>
+        </div>
+        <input type="file" id="fileInput" name="file"
+          accept=".py,.java,.cbl,.cob,.cpy,.js,.ts,.c,.cpp,.cs,.rb,.go"
+          class="drop-zone-input" />
+      </div>
+
+      <!-- File info bar -->
+      <div class="file-info-bar d-none" id="fileInfoBar">
+        <span class="fib-icon"><i class="bi bi-file-earmark-check-fill text-success"></i></span>
+        <span id="fileInfoName" class="fib-name">—</span>
+        <span id="fileInfoSize" class="fib-size"></span>
+        <span id="fileInfoLang" class="fib-lang d-none"></span>
+        <button type="button" class="btn-remove-file ms-auto" id="removeFileBtn" title="Remove">
+          <i class="bi bi-x-circle-fill"></i>
+        </button>
+      </div>
+
+      <!-- Controls row -->
+      <div class="row g-3 mt-2 align-items-end">
+        <div class="col-md-6">
+          <label class="form-label-custom" for="modelSelect">
+            <i class="bi bi-robot me-1"></i>AI Model
+          </label>
+            <select class="form-select-custom" id="modelSelect" name="model">
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash — Fast &amp; Free ⭐</option>
+            <option value="gemini-2.0-flash">Gemini 2.0 Flash — Stable &amp; Fast</option>
+            <option value="gemini-2.5-pro">Gemini 2.5 Pro — Best Quality</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <button type="submit" class="btn-modernize w-100" id="modernizeBtn" disabled>
+            <i class="bi bi-stars me-1"></i> Modernize Code
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- ─── ERROR ALERT ───────────────────────────────────────────────────────── -->
+  <div class="alert-custom alert-error d-none" id="errorAlert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <span id="errorMsg">An error occurred.</span>
+    <button class="alert-dismiss ms-auto" onclick="dismissAlert('errorAlert')">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+
+  <!-- ─── PROGRESS SECTION ─────────────────────────────────────────────────── -->
+  <div class="glass-card progress-card mb-4 d-none" id="progressCard">
+    <div class="card-header-custom">
+      <div class="spinner-dot me-3"></div>
+      <span id="progressTitle">Processing…</span>
+      <span class="ms-auto chunk-counter" id="chunkCounter"></span>
+    </div>
+
+    <!-- Language detected banner -->
+    <div class="lang-banner d-none mb-3" id="langBanner">
+      <div class="lang-banner-inner" id="langBannerInner"></div>
+    </div>
+
+    <!-- Step list -->
+    <ul class="step-list" id="stepList">
+      <li class="step-item active" id="step-detect"><i class="bi bi-search me-2"></i>Detecting language &amp; structure</li>
+      <li class="step-item" id="step-chunk"><i class="bi bi-scissors me-2"></i>Chunking code intelligently</li>
+      <li class="step-item" id="step-api"><i class="bi bi-cloud-arrow-up me-2"></i>Sending to AI (chunk by chunk)</li>
+      <li class="step-item" id="step-diff"><i class="bi bi-arrows-collapse me-2"></i>Generating diff &amp; metrics</li>
+      <li class="step-item" id="step-save"><i class="bi bi-floppy-fill me-2"></i>Saving output file</li>
+    </ul>
+
+    <!-- Progress bar -->
+    <div class="progress-track mt-3">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+    <div class="progress-label mt-1" id="progressLabel">Initializing…</div>
+  </div>
+
+  <!-- ═══ RESULTS ═══════════════════════════════════════════════════════════════ -->
+  <div id="resultsSection" class="d-none">
+
+    <!-- Success banner -->
+    <div class="success-banner mb-4" id="successBanner">
+      <i class="bi bi-check-circle-fill me-2"></i>
+      <span>Modernization complete!</span>
+      <span class="success-meta" id="successMeta"></span>
+      <button class="btn-download ms-auto" id="downloadBtn">
+        <i class="bi bi-download me-2"></i>Download File
+      </button>
+    </div>
+
+    <!-- ─── METRICS CARDS ──────────────────────────────────────────────────── -->
+    <div class="section-label mb-2"><i class="bi bi-bar-chart-fill me-2"></i>Code Metrics Dashboard</div>
+    <div class="metrics-grid mb-4">
+      <div class="metric-card blue">
+        <div class="metric-card-icon"><i class="bi bi-file-text"></i></div>
+        <div class="metric-card-body">
+          <div class="metric-val" id="mOrigLoc">—</div>
+          <div class="metric-lbl">Original LOC</div>
+        </div>
+      </div>
+      <div class="metric-card green">
+        <div class="metric-card-icon"><i class="bi bi-file-check"></i></div>
+        <div class="metric-card-body">
+          <div class="metric-val" id="mModLoc">—</div>
+          <div class="metric-lbl">Modern LOC</div>
+        </div>
+      </div>
+      <div class="metric-card orange">
+        <div class="metric-card-icon"><i class="bi bi-arrow-down-circle"></i></div>
+        <div class="metric-card-body">
+          <div class="metric-val" id="mLocChange">—</div>
+          <div class="metric-lbl">Lines Reduced</div>
+        </div>
+      </div>
+      <div class="metric-card purple">
+        <div class="metric-card-icon"><i class="bi bi-function"></i></div>
+        <div class="metric-card-body">
+          <div class="metric-val" id="mFunctions">—</div>
+          <div class="metric-lbl">Functions</div>
+        </div>
+      </div>
+      <div class="metric-card teal">
+        <div class="metric-card-icon"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="metric-card-body">
+          <div class="metric-val" id="mImprovement">—</div>
+          <div class="metric-lbl">Est. Improvement</div>
+        </div>
+      </div>
+      <div class="metric-card pink">
+        <div class="metric-card-icon"><i class="bi bi-clock-history"></i></div>
+        <div class="metric-card-body">
+          <div class="metric-val" id="mTime">—</div>
+          <div class="metric-lbl">Processing Time</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── TABS ────────────────────────────────────────────────────────────── -->
+    <div class="result-tabs mb-0">
+      <button class="rtab active" data-tab="diff"><i class="bi bi-arrows-collapse me-1"></i>Diff Viewer</button>
+      <button class="rtab" data-tab="code"><i class="bi bi-columns-gap me-1"></i>Side-by-Side Code</button>
+      <button class="rtab" data-tab="explain"><i class="bi bi-lightbulb-fill me-1"></i>AI Explanations</button>
+    </div>
+
+    <!-- ─── TAB: DIFF ────────────────────────────────────────────────────────── -->
+    <div class="tab-pane glass-card active" id="tab-diff">
+      <div class="diff-legend-bar">
+        <span class="legend-del"><i class="bi bi-dash-circle-fill me-1"></i>Removed</span>
+        <span class="legend-add"><i class="bi bi-plus-circle-fill me-1"></i>Added</span>
+        <span class="legend-same"><i class="bi bi-dot me-1"></i>Unchanged</span>
+      </div>
+      <div class="diff-table-wrap">
+        <table class="diff-table">
+          <thead>
+            <tr>
+              <th class="diff-th-lnum">#</th>
+              <th class="diff-th-code">Original Code</th>
+              <th class="diff-th-lnum">#</th>
+              <th class="diff-th-code">Modernized Code</th>
+            </tr>
+          </thead>
+          <tbody id="diffTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── TAB: SIDE-BY-SIDE CODE ──────────────────────────────────────────── -->
+    <div class="tab-pane glass-card" id="tab-code">
+      <div class="row g-3">
+        <div class="col-lg-6">
+          <div class="code-panel-header">
+            <i class="bi bi-file-earmark-code me-1 text-warning"></i>
+            Original <span class="code-panel-badge" id="badgeOrigLang"></span>
+          </div>
+          <div class="code-panel-wrap">
+            <pre><code id="originalCode" class="code-block"></code></pre>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="code-panel-header">
+            <i class="bi bi-file-earmark-check me-1 text-success"></i>
+            Modernized
+            <button class="btn-copy ms-auto" id="copyBtn">
+              <i class="bi bi-clipboard me-1"></i>Copy
+            </button>
+          </div>
+          <div class="code-panel-wrap">
+            <pre><code id="modernizedCode" class="code-block"></code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── TAB: EXPLANATIONS ────────────────────────────────────────────────── -->
+    <div class="tab-pane glass-card" id="tab-explain">
+      <div id="explanationsContainer"></div>
+    </div>
+
+  </div><!-- /resultsSection -->
+
+  <!-- ─── LOGS MODAL ──────────────────────────────────────────────────────── -->
+  <div class="modal fade" id="logsModal" tabindex="-1" aria-label="Logs">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content glass-modal">
+        <div class="modal-header border-0">
+          <h5 class="modal-title"><i class="bi bi-journal-text me-2 text-accent"></i>Processing Logs</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0">
+          <pre class="logs-pre" id="logsContent">Loading…</pre>
+        </div>
+        <div class="modal-footer border-0">
+          <button class="btn btn-sm btn-outline-secondary" id="refreshLogsBtn">
+            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ═══ FOOTER ════════════════════════════════════════════════════════════════ -->
+<footer class="footer-bar">
+  <span>CodeAscend &copy; 2025 — AI-Powered Legacy Code Modernization Engine</span>
+  <span class="footer-right">Flask · Google Gemini · Bootstrap <i class="bi bi-heart-fill text-danger mx-1"></i></span>
+</footer>
+
+<!-- ═══ SCRIPTS ═══════════════════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+'use strict';
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let modernizedCodeGlobal = '';
+let currentTaskId = null;
+let pollTimer = null;
+
+const logsModal = new bootstrap.Modal(document.getElementById('logsModal'));
+
+// ─── DOM REFS ─────────────────────────────────────────────────────────────────
+const dropZone      = document.getElementById('dropZone');
+const fileInput     = document.getElementById('fileInput');
+const fileInfoBar   = document.getElementById('fileInfoBar');
+const fileInfoName  = document.getElementById('fileInfoName');
+const fileInfoSize  = document.getElementById('fileInfoSize');
+const fileInfoLang  = document.getElementById('fileInfoLang');
+const modernizeBtn  = document.getElementById('modernizeBtn');
+const removeFileBtn = document.getElementById('removeFileBtn');
+const progressCard  = document.getElementById('progressCard');
+const progressFill  = document.getElementById('progressFill');
+const progressLabel = document.getElementById('progressLabel');
+const chunkCounter  = document.getElementById('chunkCounter');
+const progressTitle = document.getElementById('progressTitle');
+const langBanner    = document.getElementById('langBanner');
+const langBannerInner = document.getElementById('langBannerInner');
+const navLangBadge  = document.getElementById('navLangBadge');
+const langDetectedNav = document.getElementById('langDetectedNav');
+const resultsSection = document.getElementById('resultsSection');
+
+// ─── DRAG & DROP ──────────────────────────────────────────────────────────────
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; handleFile(e.dataTransfer.files[0]); }
+});
+fileInput.addEventListener('change', () => { if (fileInput.files.length) handleFile(fileInput.files[0]); });
+removeFileBtn.addEventListener('click', clearFile);
+
+function handleFile(file) {
+  fileInfoName.textContent = file.name;
+  fileInfoSize.textContent = formatBytes(file.size);
+  const lang = extToLang(file.name);
+  if (lang) {
+    fileInfoLang.textContent = lang.toUpperCase();
+    fileInfoLang.className = 'fib-lang lang-badge-' + lang;
+    fileInfoLang.classList.remove('d-none');
+    showNavLang(lang);
+  }
+  fileInfoBar.classList.remove('d-none');
+  dropZone.classList.add('d-none');
+  modernizeBtn.disabled = false;
+}
+
+function clearFile() {
+  fileInput.value = '';
+  fileInfoBar.classList.add('d-none');
+  dropZone.classList.remove('d-none');
+  modernizeBtn.disabled = true;
+  langDetectedNav.classList.add('d-none');
+}
+
+// ─── SAMPLE FILE LOADER ───────────────────────────────────────────────────────
+document.querySelectorAll('.btn-sample').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const lang = btn.dataset.lang;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Loading…`;
+    btn.disabled = true;
+    try {
+      const resp = await fetch(`/sample/${lang}`);
+      if (!resp.ok) throw new Error(await resp.text());
+      const blob = await resp.blob();
+      const extMap = { python: 'legacy_sample.py', java: 'legacy_sample.java', cobol: 'legacy_sample.cbl' };
+      const fname = extMap[lang] || 'legacy_sample.txt';
+      const file = new File([blob], fname, { type: 'text/plain' });
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fileInput.files = dt.files;
+      handleFile(file);
+    } catch (e) {
+      showError('Could not load sample: ' + e.message);
+    } finally {
+      const icons = { python: 'bi-filetype-py', java: 'bi-filetype-java', cobol: 'bi-file-earmark-code' };
+      const names = { python: 'Python', java: 'Java', cobol: 'COBOL' };
+      btn.innerHTML = `<i class="bi ${icons[lang]} me-1"></i>${names[lang]}`;
+      btn.disabled = false;
+    }
+  });
+});
+
+// ─── FORM SUBMIT ──────────────────────────────────────────────────────────────
+document.getElementById('modernizeForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  hideError();
+  resultsSection.classList.add('d-none');
+
+  // Show progress card
+  progressCard.classList.remove('d-none');
+  progressCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  resetProgress();
+
+  const formData = new FormData(e.target);
+  let resp, data;
+  try {
+    resp = await fetch('/modernize', { method: 'POST', body: formData });
+    data = await resp.json();
+  } catch (err) {
+    showError('Network error: ' + err.message);
+    progressCard.classList.add('d-none');
+    return;
+  }
+
+  if (data.error) {
+    showError(data.error);
+    progressCard.classList.add('d-none');
+    return;
+  }
+
+  currentTaskId = data.task_id;
+  if (data.language) showNavLang(data.language);
+
+  // Start polling — maxRetries guards against an infinite loop if something
+  // goes wrong server-side (e.g. server was restarted mid-run)
+  let pollRetries = 0;
+  const MAX_RETRIES = 90; // ~90 seconds at 1 poll/s
+  pollTimer = setInterval(() => pollProgress(currentTaskId, () => {
+    pollRetries++;
+    if (pollRetries > MAX_RETRIES) {
+      stopPolling();
+      progressCard.classList.add('d-none');
+      showError('Processing timed out. Please try uploading the file again.');
+    }
+  }), 1000);
+});
+
+// ─── PROGRESS POLLING ─────────────────────────────────────────────────────────
+async function pollProgress(taskId, onTick) {
+  if (onTick) onTick();
+  let pd;
+  try {
+    const r = await fetch(`/progress/${taskId}`);
+    if (!r.ok) { return; } // network hiccup — just wait for next poll
+    pd = await r.json();
+  } catch { return; } // network error — wait for next poll
+
+  // 'pending' means the server hasn't stored the task yet — silently retry
+  if (!pd || pd.status === 'pending') { return; }
+
+  updateProgressUI(pd);
+
+  if (pd.status === 'error') {
+    stopPolling();
+    showError(pd.error || 'Modernization failed. Please try again.');
+    progressCard.classList.add('d-none');
+    return;
+  }
+
+  if (pd.status === 'done' && pd.result) {
+    stopPolling();
+    setProgress(100, 'Complete!');
+    activateStep('step-save');
+    await sleep(600);
+    progressCard.classList.add('d-none');
+    renderResults(pd);
+  }
+}
+
+function updateProgressUI(pd) {
+  const done  = pd.chunks_done  || 0;
+  const total = pd.chunks_total || 0;
+  const stage = pd.stage || 'Processing…';
+
+  // Language banner
+  if (pd.language && pd.language !== 'unknown') {
+    langBannerInner.innerHTML = `<i class="bi ${langIcon(pd.language)} me-2"></i>
+      Detected language: <strong>${pd.language.toUpperCase()}</strong>
+      ${total ? `&nbsp;·&nbsp;<strong>${total}</strong> chunk(s) identified` : ''}`;
+    langBanner.classList.remove('d-none');
+    showNavLang(pd.language);
+  }
+
+  // Chunk counter
+  if (total > 0) {
+    chunkCounter.textContent = `Chunk ${done}/${total}`;
+    chunkCounter.classList.remove('d-none');
+  }
+
+  // Progress bar
+  let pct = 5;
+  if (total > 0 && done > 0) pct = Math.min(95, Math.round(5 + (done / total) * 85));
+  if (stage === 'Complete') pct = 100;
+  setProgress(pct, stage);
+
+  // Steps
+  if (stage.includes('Detecting') || stage.includes('Language detected')) {
+    activateStep('step-detect');
+  } else if (stage.includes('chunk') && done === 0) {
+    activateStep('step-chunk');
+  } else if (stage.includes('chunk') && done > 0) {
+    doneStep('step-detect'); doneStep('step-chunk'); activateStep('step-api');
+  } else if (stage.includes('diff') || stage.includes('metrics')) {
+    doneStep('step-api'); activateStep('step-diff');
+  } else if (stage.includes('Saving')) {
+    doneStep('step-diff'); activateStep('step-save');
+  }
+}
+
+function resetProgress() {
+  progressFill.style.width = '0%';
+  progressLabel.textContent = 'Initializing…';
+  chunkCounter.textContent = '';
+  langBanner.classList.add('d-none');
+  document.querySelectorAll('.step-item').forEach(s => {
+    s.classList.remove('active','done');
+  });
+  activateStep('step-detect');
+}
+
+function setProgress(pct, label) {
+  progressFill.style.width = pct + '%';
+  progressLabel.textContent = label;
+}
+function activateStep(id) {
+  const el = document.getElementById(id);
+  if (el && !el.classList.contains('done')) el.classList.add('active');
+}
+function doneStep(id) {
+  const el = document.getElementById(id);
+  if (el) { el.classList.remove('active'); el.classList.add('done'); }
+}
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+// ─── RENDER RESULTS ──────────────────────────────────────────────────────────
+function renderResults(pd) {
+  const data = pd.result;
+  modernizedCodeGlobal = data.modernized_code;
+
+  // Success banner
+  const m = data.metrics;
+  document.getElementById('successMeta').textContent =
+    ` · ${data.chunks_count} chunk(s) · ${data.language.toUpperCase()} · ${m.processing_time}s`;
+
+  // Metrics
+  document.getElementById('mOrigLoc').textContent = m.orig_loc.toLocaleString();
+  document.getElementById('mModLoc').textContent  = m.mod_loc.toLocaleString();
+
+  const change = m.orig_loc - m.mod_loc;
+  const changeEl = document.getElementById('mLocChange');
+  changeEl.textContent = (change >= 0 ? '▼ ' : '▲ ') + Math.abs(change);
+  changeEl.classList.toggle('positive-val', change > 0);
+  changeEl.classList.toggle('negative-val', change < 0);
+
+  document.getElementById('mFunctions').textContent  = `${m.orig_funcs} → ${m.mod_funcs}`;
+  document.getElementById('mImprovement').textContent = m.improvement_pct + '%';
+  document.getElementById('mTime').textContent        = m.processing_time + 's';
+
+  // Diff
+  document.getElementById('diffTableBody').innerHTML =
+    data.diff_html || '<tr><td colspan="4" class="text-center p-4 text-muted">No differences detected.</td></tr>';
+
+  // Code panels
+  const langCls = langToHljs(data.language);
+  const origEl = document.getElementById('originalCode');
+  const modEl  = document.getElementById('modernizedCode');
+  origEl.className = `code-block language-${langCls}`;
+  modEl.className  = `code-block language-${langCls}`;
+  origEl.textContent = data.original_code;
+  modEl.textContent  = data.modernized_code;
+  hljs.highlightElement(origEl);
+  hljs.highlightElement(modEl);
+  document.getElementById('badgeOrigLang').textContent = data.language.toUpperCase();
+
+  // Explanations
+  renderExplanations(data.explanations, data.language);
+
+  // Show results
+  resultsSection.classList.remove('d-none');
+  resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Activate first tab
+  switchTab('diff');
+}
+
+// ─── EXPLANATIONS ─────────────────────────────────────────────────────────────
+
+/**
+ * Map improvement text → category using keyword scan.
+ */
+function categorizeImprovement(what, why) {
+  const text = (what + ' ' + why).toLowerCase();
+  if (/stream|parallel|cache|complex|algorithm|loop|sort|search|time|cpu|memory|performance/.test(text))
+    return 'performance';
+  if (/read|clean|name|comment|doc|format|style|structure|clarity|convention|readable/.test(text))
+    return 'readability';
+  if (/optim|reduc|merg|simplif|efficient|refactor/.test(text))
+    return 'optimization';
+  return 'general';
+}
+
+const CAT_META = {
+  performance:  { label: 'Performance',  icon: 'bi-speedometer2',     cls: 'cat-perf'  },
+  readability:  { label: 'Readability',  icon: 'bi-book',             cls: 'cat-read'  },
+  optimization: { label: 'Optimization', icon: 'bi-lightning-charge', cls: 'cat-opt'   },
+  general:      { label: 'General',      icon: 'bi-check2-circle',    cls: 'cat-gen'   },
+};
+
+function renderExplanations(explanations, language) {
+  const container = document.getElementById('explanationsContainer');
+  if (!explanations || !explanations.length) {
+    container.innerHTML = '<p class="text-muted-custom p-3">No explanations available.</p>';
+    return;
+  }
+
+  container.innerHTML = explanations.map((exp, i) => {
+    const improvements = exp.improvements || [];
+
+    // Group by category
+    const groups = {};
+    improvements.forEach(imp => {
+      const cat = categorizeImprovement(imp.what || '', imp.why || '');
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(imp);
+    });
+
+    const groupsHtml = Object.entries(groups).map(([cat, imps]) => {
+      const meta = CAT_META[cat] || CAT_META.general;
+      const items = imps.map(imp => `
+        <li class="exp-imp-item">
+          <div class="exp-what"><strong>What:</strong> ${escHtml(imp.what || '')}</div>
+          <div class="exp-why text-muted-custom"><i class="bi bi-arrow-return-right me-1"></i>${escHtml(imp.why || '')}</div>
+        </li>
+      `).join('');
+      return `
+        <div class="exp-category ${meta.cls}">
+          <div class="exp-cat-header">
+            <i class="bi ${meta.icon} me-2"></i>${meta.label}
+          </div>
+          <ul class="exp-imp-list">${items}</ul>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="explanation-block ${i > 0 ? 'mt-3' : ''}">
+        <div class="exp-block-header">
+          <span class="exp-idx">${i + 1}</span>
+          <span class="exp-chunk-name">${escHtml(exp.chunk_name || 'chunk')}</span>
+          <span class="exp-type-badge">${escHtml(exp.chunk_type || '')}</span>
+          <span class="exp-lang-badge">${language.toUpperCase()}</span>
+        </div>
+        <div class="exp-summary">${escHtml(exp.summary || '')}</div>
+        ${groupsHtml || '<p class="text-muted-custom small mb-0">No detailed improvements listed.</p>'}
+      </div>
+    `;
+  }).join('');
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.rtab').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+function switchTab(name) {
+  document.querySelectorAll('.rtab').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+}
+
+// ─── COPY BUTTON ──────────────────────────────────────────────────────────────
+document.getElementById('copyBtn').addEventListener('click', () => {
+  if (!modernizedCodeGlobal) return;
+  navigator.clipboard.writeText(modernizedCodeGlobal).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied!';
+    btn.classList.add('btn-copy-success');
+    setTimeout(() => {
+      btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy';
+      btn.classList.remove('btn-copy-success');
+    }, 2000);
+  });
+});
+
+// ─── DOWNLOAD ─────────────────────────────────────────────────────────────────
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  window.location.href = '/download';
+});
+
+// ─── LOGS ─────────────────────────────────────────────────────────────────────
+document.getElementById('logsBtn').addEventListener('click', async () => {
+  await fetchLogs(); logsModal.show();
+});
+document.getElementById('refreshLogsBtn').addEventListener('click', fetchLogs);
+async function fetchLogs() {
+  try {
+    const r = await fetch('/logs');
+    const d = await r.json();
+    document.getElementById('logsContent').textContent = d.logs || 'No logs yet.';
+  } catch { document.getElementById('logsContent').textContent = 'Failed to load logs.'; }
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function showNavLang(lang) {
+  const icons = { python:'bi-filetype-py', java:'bi-filetype-java', cobol:'bi-file-earmark-code',
+                  javascript:'bi-filetype-js', typescript:'bi-filetype-ts', c:'bi-file-code',
+                  cpp:'bi-file-code', go:'bi-file-code', ruby:'bi-gem' };
+  navLangBadge.innerHTML = `<i class="bi ${icons[lang] || 'bi-code-slash'} me-1"></i>${lang.toUpperCase()}`;
+  navLangBadge.className = `lang-detected-pill lang-badge-${lang}`;
+  langDetectedNav.classList.remove('d-none');
+}
+
+function langIcon(lang) {
+  const m = { python:'bi-filetype-py', java:'bi-filetype-java', cobol:'bi-file-earmark-code',
+              javascript:'bi-filetype-js', typescript:'bi-filetype-ts' };
+  return m[lang] || 'bi-code-slash';
+}
+
+function extToLang(fname) {
+  const ext = fname.split('.').pop().toLowerCase();
+  const m = { py:'python', java:'java', cbl:'cobol', cob:'cobol', cpy:'cobol',
+              js:'javascript', ts:'typescript', c:'c', cpp:'cpp', cs:'csharp', rb:'ruby', go:'go' };
+  return m[ext] || null;
+}
+
+function langToHljs(lang) {
+  const m = { python:'python', java:'java', cobol:'cobol', javascript:'javascript',
+              typescript:'typescript', c:'c', cpp:'cpp', csharp:'csharp', ruby:'ruby', go:'go' };
+  return m[lang] || 'plaintext';
+}
+
+function showError(msg) {
+  document.getElementById('errorMsg').textContent = msg;
+  document.getElementById('errorAlert').classList.remove('d-none');
+}
+function hideError() { document.getElementById('errorAlert').classList.add('d-none'); }
+function dismissAlert(id) { document.getElementById(id).classList.add('d-none'); }
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(2) + ' MB';
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>

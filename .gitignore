@@ -1,0 +1,36 @@
+# ─── Python ───────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ─── Virtual environments ─────────────────
+venv/
+env/
+.venv/
+.env/
+
+# ─── Environment / secrets ────────────────
+.env
+*.env
+
+# ─── App runtime folders ──────────────────
+uploads/
+outputs/
+logs.txt
+
+# ─── IDE / OS ─────────────────────────────
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Pytest / coverage ────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
